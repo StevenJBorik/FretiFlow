@@ -3,7 +3,7 @@ import numpy as np
 import random
 
 # Read train data
-train_data = pd.read_csv('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\Desktop\\output\\train_data_v2.csv')
+train_data = pd.read_csv(r'C:\Users\SBD2RP\OneDrive - MillerKnoll\installs\Desktop\output\train_data_v2.csv')
 
 # Iterate over each row in train data
 for index, row in train_data.iterrows():
@@ -24,7 +24,8 @@ for index, row in train_data.iterrows():
         train_data.at[index, 'section.scale_change'] = 0  # No scale change
 
 # Read test data
-test_data = pd.read_csv('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\Desktop\\output\\test_data_v2.csv')
+test_data = pd.read_csv(r'C:\Users\SBD2RP\OneDrive - MillerKnoll\installs\Desktop\output\test_data_v2.csv')
+
 
 # Iterate over each row in test data
 for index, row in test_data.iterrows():
@@ -45,5 +46,6 @@ for index, row in test_data.iterrows():
         test_data.at[index, 'section.scale_change'] = 0  # No scale change
 
 # Save the modified train and test data
-train_data.to_csv('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\Desktop\\output\\modified_train_data.csv', index=False)
-test_data.to_csv('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\Desktop\\output\\modified_test_data.csv', index=False)
+train_data.to_csv(r'C:\Users\SBD2RP\OneDrive - MillerKnoll\installs\Desktop\output\modified_train_data.csv', index=False)
+test_data.to_csv(r'C:\Users\SBD2RP\OneDrive - MillerKnoll\installs\Desktop\output\modified_test_data.csv', index=False)
+
