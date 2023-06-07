@@ -9,10 +9,10 @@ train_data = pd.read_csv('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\D
 test_data = pd.read_csv('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\Desktop\\output\\test_data_v2.csv')
 
 # Extract the input features and target labels
-X_train = train_data.iloc[:, :-1].values
+X_train = train_data[['song.section_start', 'song.duration', 'song.tempo', 'song.time_signature']].values
 y_train = train_data.iloc[:, -1].values
 
-X_test = test_data.iloc[:, :-1].values
+X_test =  test_data[['song.section_start', 'song.duration', 'song.tempo', 'song.time_signature']].values
 y_test = test_data.iloc[:, -1].values
 
 # Reshape the input features for the LSTM model
