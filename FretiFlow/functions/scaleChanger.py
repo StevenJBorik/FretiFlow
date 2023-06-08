@@ -1,19 +1,12 @@
 import pandas as pd
 import numpy as np
 
-# Define sliding window size
-window_size = 3  # Adjust as per your preference
-
 # Read train data
 train_data = pd.read_csv(r'C:\Users\SBD2RP\OneDrive - MillerKnoll\installs\Desktop\output\train_data_v3.csv')
 
-# Define column names for input points and labels
-input_columns = [f'input_{i+1}' for i in range(window_size)]
-label_columns = [f'label_{i+1}' for i in range(window_size)]
-
-# Initialize input and label columns with NaN values
-for col in input_columns + label_columns:
-    train_data[col] = np.nan
+# Define column names for input and label
+input_column = 'input'
+label_column = 'label'
 
 # Iterate over each row in train data
 for index, row in train_data.iterrows():
@@ -25,30 +18,36 @@ for index, row in train_data.iterrows():
         else:
             section_start = np.array([float(value) for value in section_start_str.split(',')])
 
-        # Randomly select a point from section_start to be included in the window
-        selected_point = np.random.choice(section_start)
+        num_points = len(section_start)
 
-        # Get indices of the sliding window points
-        window_indices = np.arange(len(section_start))[-window_size:]
+        # Generate input array
+        lower_bound = 1.0  # Define lower bound for random point
+        upper_bound = 600.0  # Define upper bound for random point
+        # Generate input array
+        random_point = np.random.choice(section_start)
+        input_array = [random_point, random_point + 1] + np.random.uniform(lower_bound, upper_bound, size=num_points-2).tolist()
 
-        # Fill input columns with the window points
-        train_data.loc[index, input_columns] = section_start[window_indices]
 
-        # Check if each window point corresponds to a scale change
-        for i, idx in enumerate(window_indices):
-            label = 1 if np.abs(selected_point - section_start[idx]) <= 1 else 0
-            train_data.at[index, label_columns[i]] = label
+        # Convert input_array and section_start to NumPy arrays
+        input_array = np.array(input_array)
+        section_start = np.array(section_start)
+
+        # Generate label array
+        label_array = np.zeros_like(input_array)
+        for i, input_value in enumerate(input_array):
+            label_array[i] = 1.0 if np.any(np.abs(section_start - input_value) <= 1.0) else 0.0
+
+        # Update the input and label columns
+        train_data.at[index, input_column] = ', '.join(map(str, input_array))
+        train_data.at[index, label_column] = ', '.join(map(str, label_array.tolist()))
 
     except ValueError:
         # Handle invalid values
-        train_data.loc[index, input_columns + label_columns] = np.nan
+        train_data.at[index, input_column] = np.nan
+        train_data.at[index, label_column] = np.nan
 
 # Read test data
 test_data = pd.read_csv(r'C:\Users\SBD2RP\OneDrive - MillerKnoll\installs\Desktop\output\test_data_v3.csv')
-
-# Initialize input and label columns with NaN values for test data
-for col in input_columns + label_columns:
-    test_data[col] = np.nan
 
 # Iterate over each row in test data
 for index, row in test_data.iterrows():
@@ -60,23 +59,31 @@ for index, row in test_data.iterrows():
         else:
             section_start = np.array([float(value) for value in section_start_str.split(',')])
 
-        # Randomly select a point from section_start to be included in the window
-        selected_point = np.random.choice(section_start)
+        num_points = len(section_start)
 
-        # Get indices of the sliding window points
-        window_indices = np.arange(len(section_start))[-window_size:]
+        # Generate input array
+        lower_bound = 1.0  # Define lower bound for random point
+        upper_bound = 600.0  # Define upper bound for random point
+        random_point = np.random.choice(section_start)
+        input_array = [random_point, random_point + 1] + np.random.uniform(lower_bound, upper_bound, size=num_points-2).tolist()
 
-        # Fill input columns with the window points
-        test_data.loc[index, input_columns] = section_start[window_indices]
+        # Convert input_array and section_start to NumPy arrays
+        input_array = np.array(input_array)
+        section_start = np.array(section_start)
 
-        # Check if each window point corresponds to a scale change
-        for i, idx in enumerate(window_indices):
-            label = 1 if np.abs(selected_point - section_start[idx]) <= 1 else 0
-            test_data.at[index, label_columns[i]] = label
+        # Generate label array
+        label_array = np.zeros_like(input_array)
+        for i, input_value in enumerate(input_array):
+            label_array[i] = 1.0 if np.any(np.abs(section_start - input_value) <= 1.0) else 0.0
+
+        # Update the input and label columns
+        test_data.at[index, input_column] = ', '.join(map(str, input_array))
+        test_data.at[index, label_column] = ', '.join(map(str, label_array.tolist()))
 
     except ValueError:
         # Handle invalid values
-        test_data.loc[index, input_columns + label_columns] = np.nan
+        test_data.at[index, input_column] = np.nan
+        test_data.at[index, label_column] = np.nan
 
 # Save the modified train and test data
 train_data.to_csv(r'C:\Users\SBD2RP\OneDrive - MillerKnoll\installs\Desktop\output\modified_train_data.csv', index=False)
