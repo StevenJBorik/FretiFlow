@@ -78,5 +78,8 @@ score = model.evaluate([X_test_sections, X_test_input], y_test, verbose=0)
 print('Test loss:', score[0])
 print('Test accuracy:', score[1])
 
+# Save the trained model
+model.save('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\Desktop\\output\\model.h5')
+
 # Make predictions
 predictions = model.predict([X_test_sections, X_test_input])
