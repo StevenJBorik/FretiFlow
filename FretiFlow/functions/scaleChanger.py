@@ -18,28 +18,20 @@ for index, row in train_data.iterrows():
         else:
             section_start = np.array([float(value) for value in section_start_str.split(',')])
 
-        num_points = len(section_start)
+        # Generate input value
+        if (index % 5 == 0):
+            input_value = np.random.choice(section_start)
+        else:
+            lower_bound = 1.0  # Define lower bound for random point
+            upper_bound = 600.0  # Define upper bound for random point
+            input_value = np.random.uniform(lower_bound, upper_bound)
 
-        # Generate input array
-        lower_bound = 1.0  # Define lower bound for random point
-        upper_bound = 600.0  # Define upper bound for random point
-        # Generate input array
-        random_point = np.random.choice(section_start)
-        input_array = [random_point, random_point + 1] + np.random.uniform(lower_bound, upper_bound, size=num_points-2).tolist()
-
-
-        # Convert input_array and section_start to NumPy arrays
-        input_array = np.array(input_array)
-        section_start = np.array(section_start)
-
-        # Generate label array
-        label_array = np.zeros_like(input_array)
-        for i, input_value in enumerate(input_array):
-            label_array[i] = 1.0 if np.any(np.abs(section_start - input_value) <= 1.0) else 0.0
+        # Generate output label
+        label_value = 1.0 if np.any(np.abs(section_start - input_value) == 0.0) else 0.0
 
         # Update the input and label columns
-        train_data.at[index, input_column] = ', '.join(map(str, input_array))
-        train_data.at[index, label_column] = ', '.join(map(str, label_array.tolist()))
+        train_data.at[index, input_column] = input_value
+        train_data.at[index, label_column] = label_value
 
     except ValueError:
         # Handle invalid values
@@ -59,26 +51,20 @@ for index, row in test_data.iterrows():
         else:
             section_start = np.array([float(value) for value in section_start_str.split(',')])
 
-        num_points = len(section_start)
+        # Generate input value
+        if (index % 5 == 0):
+            input_value = np.random.choice(section_start)
+        else:
+            lower_bound = 1.0  # Define lower bound for random point
+            upper_bound = 600.0  # Define upper bound for random point
+            input_value = np.random.uniform(lower_bound, upper_bound)
 
-        # Generate input array
-        lower_bound = 1.0  # Define lower bound for random point
-        upper_bound = 600.0  # Define upper bound for random point
-        random_point = np.random.choice(section_start)
-        input_array = [random_point, random_point + 1] + np.random.uniform(lower_bound, upper_bound, size=num_points-2).tolist()
-
-        # Convert input_array and section_start to NumPy arrays
-        input_array = np.array(input_array)
-        section_start = np.array(section_start)
-
-        # Generate label array
-        label_array = np.zeros_like(input_array)
-        for i, input_value in enumerate(input_array):
-            label_array[i] = 1.0 if np.any(np.abs(section_start - input_value) <= 1.0) else 0.0
+        # Generate output label
+        label_value = 1.0 if np.any(np.abs(section_start - input_value) == 0.0) else 0.0
 
         # Update the input and label columns
-        test_data.at[index, input_column] = ', '.join(map(str, input_array))
-        test_data.at[index, label_column] = ', '.join(map(str, label_array.tolist()))
+        test_data.at[index, input_column] = input_value
+        test_data.at[index, label_column] = label_value
 
     except ValueError:
         # Handle invalid values
