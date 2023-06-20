@@ -1,87 +1,97 @@
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Concatenate, Input
+from tensorflow.keras.layers import Dense, LSTM, Concatenate, Input
 from tensorflow.keras.models import Model
-from sklearn.metrics import precision_score, recall_score
-
+from sklearn.metrics import precision_score, recall_score, accuracy_score, f1_score, average_precision_score
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 # Load the training and testing data into Pandas DataFrames
 train_data = pd.read_csv('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\Desktop\\output\\modified_train_data.csv')
 test_data = pd.read_csv('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\Desktop\\output\\modified_test_data.csv')
 
 # Convert data types
-train_data['song.sections_start'] = train_data['song.sections_start'].apply(lambda x: np.array(x.split(',')).astype(float) if isinstance(x, str) else np.array([]))
-test_data['song.sections_start'] = test_data['song.sections_start'].apply(lambda x: np.array(x.split(',')).astype(float) if isinstance(x, str) else np.array([]))
-train_data['input'] = train_data['input'].apply(lambda x: np.array(x.split(',')).astype(float) if isinstance(x, str) else np.array([]))
-test_data['input'] = test_data['input'].apply(lambda x: np.array(x.split(',')).astype(float) if isinstance(x, str) else np.array([]))
+train_data['song.sections_start'] = train_data['song.sections_start'].apply(
+    lambda x: np.array(x.split(',')).astype(float) if isinstance(x, str) else np.array([])
+)
+test_data['song.sections_start'] = test_data['song.sections_start'].apply(
+    lambda x: np.array(x.split(',')).astype(float) if isinstance(x, str) else np.array([])
+)
+train_data['input'] = train_data['input'].apply(
+    lambda x: float(x) if isinstance(x, str) else np.nan
+)
+test_data['input'] = test_data['input'].apply(
+    lambda x: float(x) if isinstance(x, str) else np.nan
+)
 
-# Filter out empty arrays
-train_data = train_data[train_data['song.sections_start'].apply(len) > 0]
-train_data['label'] = train_data['label'].apply(lambda x: np.array(x.split(',')).astype(float) if isinstance(x, str) else np.array([]))
-test_data = test_data[test_data['song.sections_start'].apply(len) > 0]
-test_data['label'] = test_data['label'].apply(lambda x: np.array(x.split(',')).astype(float) if isinstance(x, str) else np.array([]))
+# Filter out rows with missing values
+train_data = train_data.dropna(subset=['song.sections_start', 'input', 'label'])
+test_data = test_data.dropna(subset=['song.sections_start', 'input', 'label'])
 
-# Convert the lists to a list of arrays
+# Convert the lists to arrays
 X_train_sections = train_data['song.sections_start'].to_list()
-X_train_input = train_data['input'].to_list()
-y_train = train_data['label'].to_list()
+X_train_input = np.array(train_data['input'], dtype='float32')
+y_train = np.array(train_data['label'], dtype='float32')
 
 X_test_sections = test_data['song.sections_start'].to_list()
-X_test_input = test_data['input'].to_list()
-y_test = test_data['label'].to_list()
+X_test_input = np.array(test_data['input'], dtype='float32')
+y_test = np.array(test_data['label'], dtype='float32')
 
-# Pad sequences to have the same length
-X_train_sections = pad_sequences(X_train_sections)
-X_train_input = pad_sequences(X_train_input)
-X_test_sections = pad_sequences(X_test_sections, maxlen=X_train_sections.shape[1])
-X_test_input = pad_sequences(X_test_input, maxlen=X_train_input.shape[1])
+# Check if X_train_sections is not empty before applying pad_sequences
+if X_train_sections:
+    # Pad sequences
+    X_train_sections = pad_sequences(X_train_sections, padding='post', truncating='post', dtype='float32')
+    X_test_sections = pad_sequences(X_test_sections, maxlen=X_train_sections.shape[1], padding='post', truncating='post', dtype='float32')
 
-# Pad y values to have the same length
-max_length = 30
-y_train = pad_sequences(y_train, maxlen=max_length)
-y_test = pad_sequences(y_test, maxlen=max_length)
+    # Reshape X_train_sections and X_test_sections
+    X_train_sections = np.expand_dims(X_train_sections, axis=-1)
+    X_test_sections = np.expand_dims(X_test_sections, axis=-1)
 
-# Convert the lists to numpy arrays
-X_train_sections = np.array(X_train_sections)
-X_train_input = np.array(X_train_input)
-X_test_sections = np.array(X_test_sections)
-X_test_input = np.array(X_test_input)
+    # Define the model architecture
+    input_sections = Input(shape=(X_train_sections.shape[1], X_train_sections.shape[2]), name='input_sections')
+    input_input = Input(shape=(1,), name='input_input')
 
-# Define the network architecture
-input_sections = Input(shape=(X_train_sections.shape[1],))
-input_input = Input(shape=(X_train_input.shape[1],))
+    sections_lstm = LSTM(units=128)(input_sections)
+    input_lstm = LSTM(units=128)(input_input)
 
-concatenated = Concatenate()([input_sections, input_input])
-dense1 = Dense(units=64, activation='relu')(concatenated)
-dense2 = Dense(units=64, activation='relu')(dense1)
-output = Dense(units=max_length, activation='sigmoid')(dense2)
+    concatenated = Concatenate()([sections_lstm, input_lstm])
 
-model = Model(inputs=[input_sections, input_input], outputs=output)
+    output = Dense(1, activation='sigmoid')(concatenated)
 
-# Compile the model
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model = Model(inputs=[input_sections, input_input], outputs=output)
 
-# Define precision and recall metrics
-def precision(y_true, y_pred):
-    y_pred_binary = tf.round(y_pred)
-    return precision_score(y_true, y_pred_binary, average='micro')
+    # Compile the model
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-def recall(y_true, y_pred):
-    y_pred_binary = tf.round(y_pred)
-    return recall_score(y_true, y_pred_binary, average='micro')
+    # Train the model
+    model.fit(x=[X_train_sections, X_train_input], y=y_train, epochs=10, batch_size=32)
 
-# Train the model
-model.fit([X_train_sections, X_train_input], y_train, batch_size=64, epochs=300, validation_data=([X_test_sections, X_test_input], y_test),
-          callbacks=[tf.keras.callbacks.LambdaCallback(on_epoch_end=lambda epoch, logs: print(f'Precision: {precision(y_test, model.predict([X_test_sections, X_test_input])):.4f}, Recall: {recall(y_test, model.predict([X_test_sections, X_test_input])):.4f}'))])
+    # Evaluate the model
+    loss, accuracy = model.evaluate([X_test_sections, X_test_input], y_test)
+    print('Test Loss:', loss)
+    print('Test Accuracy:', accuracy)
 
-# Evaluate the model
-score = model.evaluate([X_test_sections, X_test_input], y_test, verbose=0)
-print('Test loss:', score[0])
-print('Test accuracy:', score[1])
+    # Make predictions
+    predictions = model.predict([X_test_sections, X_test_input])
 
-# Save the trained model
-model.save('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\Desktop\\output\\model.h5')
+    # Threshold the predictions
+    threshold = 0.5
+    binary_predictions = (predictions > threshold).astype(int)
 
-# Make predictions
-predictions = model.predict([X_test_sections, X_test_input])
+    # Compute evaluation metrics
+    precision = precision_score(y_test, binary_predictions)
+    recall = recall_score(y_test, binary_predictions)
+    accuracy = accuracy_score(y_test, binary_predictions)
+    f1 = f1_score(y_test, binary_predictions)
+    average_precision = average_precision_score(y_test, predictions)
+
+    print('Precision:', precision)
+    print('Recall:', recall)
+    print('Accuracy:', accuracy)
+    print('F1 Score:', f1)
+    print('Average Precision:', average_precision)
+
+    # Save the trained model
+    # model.save('C:\\Users\\SBD2RP\\OneDrive - MillerKnoll\\installs\\Desktop\\output\\model.h5')
+else:
+    print("X_train_sections is empty. Check the data and filtering process.")
